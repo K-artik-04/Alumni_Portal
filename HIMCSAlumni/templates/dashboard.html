@@ -5,8 +5,10 @@
   {% load static %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HIMCS Alumni Dashboard</title>
-  <link rel="stylesheet" href="{% static 'dashboard.css' %}">
+  <title>Alumni Dashboard</title>
+  <link rel="stylesheet" href="{% static 'dashboard.css' %}?v=12.0">
+  <link rel="stylesheet" href="{% static 'dashboard_modern.css' %}?v=12.0">
+  <link rel="stylesheet" href="{% static 'stories.css' %}?v=1.0">
   <!-- Icons -->
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
@@ -17,7 +19,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <img src="{% static 'logo.png' %}" alt="HIMCS Logo" class="sidebar-logo">
-      <span class="sidebar-title">HIMCS Alumni</span>
+      <span class="sidebar-title">Alumni Portal</span>
     </div>
 
     <nav class="sidebar-nav">
@@ -53,14 +55,10 @@
       </ul>
     </nav>
 
-    <div class="sidebar-footer">
-      <a href="{% url 'logout' %}" class="logout-btn"
-        style="text-decoration: none; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">
-        <i class='bx bx-log-out'></i>
-        <span style="margin-left: 10px;">Logout</span>
-      </a>
-    </div>
   </aside>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <!-- Main Content -->
   <main class="main-content">
@@ -77,228 +75,182 @@
 
     <!-- Dashboard Section -->
     <section id="dashboard" class="section active">
-      <div class="welcome-banner new-banner">
-        <div class="banner-left">
-          <div class="banner-avatar">
-            <img src="{% static 'user.jpg' %}" alt="Profile">
-          </div>
-          <div class="banner-info">
-            <h2 style="font-size: 1.5rem; font-weight: 700; margin: 0; color: white;">{{ name }}</h2>
-            <p style="margin: 0; color: rgba(255,255,255,0.9);">Software Engineer at Microsoft</p>
-            <button id="banner-edit-profile"
-              style="background: none; border: none; color: #fbbf24; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; padding: 0; margin-top: 5px;">
-              <i class='bx bx-edit'></i> Edit Profile
+
+      <!-- Topbar with notifications and profile -->
+      <div class="dash-topbar">
+        <div class="dash-topbar-left">
+          <p class="dash-date"><i class='bx bx-calendar'></i> {% now "F d, Y" %}</p>
+        </div>
+        <div class="dash-topbar-right">
+          <div class="topbar-icon-wrapper" id="notifBellWrapper">
+            <button class="topbar-icon-btn" id="notifBellBtn" title="Notifications">
+              <i class='bx bxs-bell'></i>
+              <span class="topbar-badge" id="notifBadge" style="display: none;">0</span>
             </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button class="notif-mark-all" id="markAllRead">Mark all read</button>
+              </div>
+              <div class="notif-list" id="notifList"></div>
+            </div>
           </div>
-        </div>
-        <div class="banner-center">
-          <h1>Welcome, <span style="color: #fbbf24;">{{ name }}!</span> 🎉</h1>
-        </div>
-        <div class="banner-right" style="align-items: flex-end; font-size: 1rem;">
-          <p class="banner-email" style="font-size: 0.9rem; margin-bottom: 5px;"><i class='bx bx-envelope'></i>
-            {{ email }}</p>
-          <a href="#" class="banner-password" style="font-size: 0.9rem;"><i class='bx bx-key'></i> Change Password</a>
-        </div>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue">
-            <i class='bx bxs-user-account'></i>
-          </div>
-          <div class="stat-info">
-            <h4>Total Alumni</h4>
-            <p>1,250+</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green">
-            <i class='bx bxs-calendar-check'></i>
-          </div>
-          <div class="stat-info">
-            <h4>Upcoming Events</h4>
-            <p>3</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon orange">
-            <i class='bx bxs-briefcase-alt-2'></i>
-          </div>
-          <div class="stat-info">
-            <h4>New Jobs</h4>
-            <p>12</p>
-          </div>
-        </div>
-        <!-- Create Post Button Card -->
-        <div class="stat-card create-post-card" onclick="openPostModal()"
-          style="cursor: pointer; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; justify-content: center;">
-          <div class="stat-icon" style="background: rgba(255,255,255,0.2); color: white;">
-            <i class='bx bx-plus'></i>
-          </div>
-          <div class="stat-info">
-            <h4 style="color: rgba(255,255,255,0.9);">Host/Post</h4>
-            <p style="color: white; font-size: 1.2rem;">Create Event/Job</p>
+          <div class="topbar-divider"></div>
+          <div class="topbar-profile" id="profileMenuContainer">
+            <button class="topbar-profile-btn" id="profilePicBtn">
+              <img src="{% if user.profile_pic %}{{ user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ name|urlencode }}&background=6366f1&color=fff{% endif %}" alt="Profile">
+              <div class="topbar-profile-info">
+                <span class="topbar-name">{{ first_name }}</span>
+                <span class="topbar-role">{{ user.position|default:'Alumni' }}</span>
+              </div>
+              <i class='bx bx-chevron-down topbar-chevron'></i>
+            </button>
+            <div class="profile-dropdown" id="profileDropdown">
+              <div class="pd-header">
+                <img src="{% if user.profile_pic %}{{ user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ name|urlencode }}&background=6366f1&color=fff{% endif %}" alt="Profile" class="pd-avatar">
+                <div class="pd-info">
+                  <h4>{{ name }}</h4>
+                  <p>{{ user.position|default:'Alumni' }}</p>
+                  <p class="pd-company">{{ user.company|default:'HIMCS' }}</p>
+                </div>
+              </div>
+              <div class="pd-divider"></div>
+              <ul class="pd-menu">
+                <li><a href="#" id="menu-edit-profile"><i class='bx bx-user-circle'></i> Update Profile</a></li>
+                <li><a href="#" id="menu-change-password"><i class='bx bx-lock-alt'></i> Change Password</a></li>
+                <li class="pd-danger"><a href="{% url 'logout' %}"><i class='bx bx-log-out'></i> Logout</a></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Create Post Modal -->
-      <div id="postModal" class="modal">
-        <div class="modal-content">
-          <span class="close-modal" onclick="closePostModal()">&times;</span>
-          <h2 class="section-title" style="font-size: 1.5rem; margin-bottom: 20px;">Create New Post</h2>
-
-          <form id="createPostForm">
-            <div class="form-group">
-              <label class="form-label">Post Type</label>
-              <select class="form-input" id="postType" required onchange="toggleEventFields()">
-                <option value="job">Job Opportunity</option>
-                <option value="webinar">Webinar</option>
-                <option value="alumni-meet">Alumni Meet</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Title</label>
-              <input type="text" class="form-input" id="postTitle" placeholder="e.g. Senior Developer / Annual Meet"
-                required>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" id="orgLabel">Company Name</label>
-              <input type="text" class="form-input" id="postOrg" placeholder="e.g. TechCorp" required>
-            </div>
-
-            <!-- Event Specific Fields -->
-            <div id="eventFields" style="display: none;">
-              <div class="form-grid">
-                <div class="form-group">
-                  <label class="form-label">Date</label>
-                  <input type="date" class="form-input" id="eventDate">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Time</label>
-                  <input type="time" class="form-input" id="eventTime">
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Location / Link</label>
-                <input type="text" class="form-input" id="eventLocation"
-                  placeholder="e.g. Google Meet Link or Campus Auditorium">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea class="form-input" id="postDescription" rows="3" required
-                placeholder="Brief description..."></textarea>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Post Now</button>
-          </form>
+      <!-- Hero Greeting -->
+      <div class="dash-hero">
+        <div class="dash-hero-text">
+          <h1>Welcome back, <span class="gradient-text">{{ first_name }}</span> 👋</h1>
+          <p>Here's what's happening in your alumni network today.</p>
         </div>
       </div>
 
-      <div class="content-grid">
-        <div class="main-column">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Recent Activity</h3>
-              <a href="#" class="card-action">View All</a>
-            </div>
-            <div class="activity-list">
-              <div class="list-item">
-                <div class="item-icon">
-                  <i class='bx bx-calendar'></i>
-                </div>
-                <div class="item-content">
-                  <div class="item-title">Registered for Annual Meet</div>
-                  <div class="item-subtitle">You confirmed your attendance</div>
-                </div>
-                <div class="item-meta">2h ago</div>
-              </div>
-              <div class="list-item">
-                <div class="item-icon">
-                  <i class='bx bx-briefcase'></i>
-                </div>
-                <div class="item-content">
-                  <div class="item-title">New Job Posted</div>
-                  <div class="item-subtitle">Senior Developer at TechCorp</div>
-                </div>
-                <div class="item-meta">5h ago</div>
-              </div>
-              <div class="list-item">
-                <div class="item-icon">
-                  <i class='bx bx-user-plus'></i>
-                </div>
-                <div class="item-content">
-                  <div class="item-title">New Connection Request</div>
-                  <div class="item-subtitle">Rahul Sharma sent a request</div>
-                </div>
-                <div class="item-meta">1d ago</div>
-              </div>
-            </div>
+      <!-- Stats Row -->
+      <div class="dash-stats">
+        <div class="dash-stat-pill">
+          <div class="dash-stat-dot blue"></div>
+          <div class="dash-stat-data">
+            <span class="dash-stat-value">{{ total_alumni }}</span>
+            <span class="dash-stat-label">Alumni</span>
           </div>
-
-          <!-- Job Application Status Card -->
-          <div class="card" style="margin-top: 24px;">
-            <div class="card-header">
-              <h3 class="card-title">Job Application Status</h3>
-              <a href="#" class="card-action">View All</a>
-            </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Company</th>
-                    <th>Role</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://ui-avatars.com/api/?name=Google&background=random"
-                          style="width: 24px; height: 24px; border-radius: 50%;">
-                        Google
-                      </div>
-                    </td>
-                    <td>Senior Engineer</td>
-                    <td>Oct 24, 2025</td>
-                    <td><span class="badge badge-warning">In Progress</span></td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://ui-avatars.com/api/?name=Microsoft&background=random"
-                          style="width: 24px; height: 24px; border-radius: 50%;">
-                        Microsoft
-                      </div>
-                    </td>
-                    <td>Product Manager</td>
-                    <td>Oct 20, 2025</td>
-                    <td><span class="badge badge-success">Interview</span></td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="https://ui-avatars.com/api/?name=Amazon&background=random"
-                          style="width: 24px; height: 24px; border-radius: 50%;">
-                        Amazon
-                      </div>
-                    </td>
-                    <td>SDE II</td>
-                    <td>Oct 15, 2025</td>
-                    <td><span class="badge badge-danger">Rejected</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        </div>
+        <div class="dash-stat-pill">
+          <div class="dash-stat-dot green"></div>
+          <div class="dash-stat-data">
+            <span class="dash-stat-value" id="stat-events-count">{{ total_events }}</span>
+            <span class="dash-stat-label">Events</span>
+          </div>
+        </div>
+        <div class="dash-stat-pill">
+          <div class="dash-stat-dot orange"></div>
+          <div class="dash-stat-data">
+            <span class="dash-stat-value" id="stat-jobs-count">{{ total_jobs }}</span>
+            <span class="dash-stat-label">Jobs</span>
+          </div>
+        </div>
+        <div class="dash-stat-pill">
+          <div class="dash-stat-dot pink"></div>
+          <div class="dash-stat-data">
+            <span class="dash-stat-value" id="stat-mentors-count">45</span>
+            <span class="dash-stat-label">Mentors</span>
           </div>
         </div>
       </div>
+
+      <!-- Feature Cards Grid -->
+      <div class="dash-features">
+        <div class="dash-feature-card" onclick="document.querySelector('[data-section=\'networking\']').click()">
+          <div class="feature-icon-wrap blue-glow">
+            <i class='bx bxs-network-chart'></i>
+          </div>
+          <h3>Networking Hub</h3>
+          <p>Connect with alumni, grow your network</p>
+          <span class="feature-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+        </div>
+        <div class="dash-feature-card" onclick="document.querySelector('[data-section=\'jobs\']').click()">
+          <div class="feature-icon-wrap orange-glow">
+            <i class='bx bxs-briefcase'></i>
+          </div>
+          <h3>Job Portal</h3>
+          <p>Discover career opportunities</p>
+          <span class="feature-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+        </div>
+        <div class="dash-feature-card" onclick="document.querySelector('[data-section=\'events\']').click()">
+          <div class="feature-icon-wrap green-glow">
+            <i class='bx bxs-calendar-event'></i>
+          </div>
+          <h3>Events</h3>
+          <p>Workshops, reunions & webinars</p>
+          <span class="feature-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+        </div>
+        <div class="dash-feature-card" onclick="document.querySelector('[data-section=\'stories\']').click()">
+          <div class="feature-icon-wrap purple-glow">
+            <i class='bx bxs-trophy'></i>
+          </div>
+          <h3>Success Stories</h3>
+          <p>Inspiring alumni journeys</p>
+          <span class="feature-arrow"><i class='bx bx-right-arrow-alt'></i></span>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Activity + Quick Actions -->
+      <div class="dash-bottom-grid">
+        <div class="dash-activity-card">
+          <h3>Recent Activity</h3>
+          <div class="dash-timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot blue"></div>
+              <div class="timeline-content">
+                <strong>New event created</strong>
+                <span>Annual Alumni Meet 2026 is live</span>
+                <time>2 hours ago</time>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot orange"></div>
+              <div class="timeline-content">
+                <strong>Job posted</strong>
+                <span>Senior Developer role at TechCorp</span>
+                <time>5 hours ago</time>
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot green"></div>
+              <div class="timeline-content">
+                <strong>Connection accepted</strong>
+                <span>You and Rahul are now connected</span>
+                <time>1 day ago</time>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dash-quick-card">
+          <h3>Quick Actions</h3>
+          <div class="dash-quick-links">
+            <a href="#" onclick="event.preventDefault(); document.querySelector('[data-section=\'profile-settings\']').click()">
+              <i class='bx bx-user'></i> Update Profile
+            </a>
+            <a href="#" onclick="event.preventDefault(); document.querySelector('[data-section=\'networking\']').click()">
+              <i class='bx bx-group'></i> View Directory
+            </a>
+            <a href="#" onclick="event.preventDefault(); document.querySelector('[data-section=\'feedback\']').click()">
+              <i class='bx bx-message-detail'></i> Give Feedback
+            </a>
+            <a href="{% url 'logout' %}">
+              <i class='bx bx-log-out'></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- Networking Section -->
@@ -308,27 +260,74 @@
         <p class="section-subtitle">Connect with fellow alumni and expand your professional network.</p>
       </div>
 
-      <!-- Search Bar -->
-      <div class="search-container">
-        <div class="search-bar">
-          <i class='bx bx-search search-icon'></i>
-          <input type="text" id="alumni-search" class="search-input"
-            placeholder="Search by name, role, company, or batch year...">
-          <button class="search-clear" id="search-clear" style="display: none;">
-            <i class='bx bx-x'></i>
-          </button>
+      <!-- Networking Tabs -->
+      <div class="net-tabs">
+        <button class="net-tab active" data-tab="all-alumni"><i class='bx bx-group'></i> All Alumni</button>
+        <button class="net-tab" data-tab="my-connections"><i class='bx bx-link'></i> My Connections</button>
+        <button class="net-tab" data-tab="chat"><i class='bx bx-chat'></i> Chat</button>
+      </div>
+
+      <!-- Tab: All Alumni -->
+      <div class="net-tab-content active" id="tab-all-alumni">
+        <div class="search-container" style="display: flex; gap: 10px;">
+          <div class="search-bar" style="flex: 1;">
+            <i class='bx bx-search search-icon'></i>
+            <input type="text" id="alumni-search" class="search-input"
+              placeholder="Search by name, role, company, or batch year...">
+            <button class="search-clear" id="search-clear" style="display: none;"><i class='bx bx-x'></i></button>
+          </div>
+          <select id="alumni-assistance-filter" class="form-input" style="width: auto; max-width: 200px;">
+            <option value="">All Assistance</option>
+            <option value="Job opportunity">Job Opportunity</option>
+            <option value="Guest lecture">Guest Lecture</option>
+            <option value="college funding">College Funding</option>
+            <option value="none of these">None of these</option>
+          </select>
+        </div>
+        <div class="stats-grid" id="networking-grid"></div>
+        <div id="no-results" class="no-results" style="display: none;">
+          <i class='bx bx-search-alt-2'></i>
+          <h3>No alumni found</h3>
+          <p>Try adjusting your search terms</p>
         </div>
       </div>
 
-      <div class="stats-grid" id="networking-grid">
-        <!-- Populated by JS -->
+      <!-- Tab: My Connections -->
+      <div class="net-tab-content" id="tab-my-connections">
+        <div class="stats-grid" id="connections-grid"></div>
+        <div id="no-connections" class="no-results" style="display: none;">
+          <i class='bx bx-user-x'></i>
+          <h3>No connections yet</h3>
+          <p>Start connecting with fellow alumni!</p>
+        </div>
       </div>
 
-      <!-- No Results Message -->
-      <div id="no-results" class="no-results" style="display: none;">
-        <i class='bx bx-search-alt-2'></i>
-        <h3>No alumni found</h3>
-        <p>Try adjusting your search terms</p>
+      <!-- Tab: Chat -->
+      <div class="net-tab-content" id="tab-chat">
+        <div class="chat-layout">
+          <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+              <h4>Conversations</h4>
+            </div>
+            <div class="chat-contacts" id="chatContacts">
+              <div class="chat-empty-contacts"><i class='bx bx-conversation'></i>
+                <p>Connect with alumni to start chatting</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-main" id="chatMain">
+            <div class="chat-placeholder"><i class='bx bx-message-rounded-dots'></i>
+              <h3>Select a conversation</h3>
+              <p>Choose a connection from the left to start chatting</p>
+            </div>
+            <div class="chat-header" id="chatHeader" style="display:none;"></div>
+            <div class="chat-messages" id="chatMessages" style="display:none;"></div>
+            <div class="chat-input-bar" id="chatInputBar" style="display:none;">
+              <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+              <button id="chatSendBtn"><i class='bx bx-send'></i></button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -336,30 +335,100 @@
     <section id="jobs" class="section">
       <div class="section-header">
         <h2 class="section-title">Job Portal</h2>
-        <p class="section-subtitle">Discover job opportunities posted by fellow alumni.</p>
+        <p class="section-subtitle">Discover opportunities and share openings with the alumni network.</p>
       </div>
 
-      <!-- Search Bar -->
-      <div class="search-container">
-        <div class="search-bar">
-          <i class='bx bx-search search-icon'></i>
-          <input type="text" id="job-search" class="search-input"
-            placeholder="Search jobs by title, company, or location...">
-          <button class="search-clear" id="job-search-clear" style="display: none;">
-            <i class='bx bx-x'></i>
-          </button>
+      <!-- Job Portal Tabs -->
+      <div class="job-tabs">
+        <button class="job-tab active" data-job-tab="browse-jobs"><i class='bx bx-search-alt-2'></i> Browse
+          Jobs</button>
+        <button class="job-tab" data-job-tab="post-job"><i class='bx bx-plus-circle'></i> Post a Job</button>
+      </div>
+
+      <!-- Tab: Browse Jobs -->
+      <div class="job-tab-content active" id="tab-browse-jobs">
+        <!-- Search & Filter Bar -->
+        <div class="job-search-bar">
+          <div class="job-search-input-wrap">
+            <i class='bx bx-search'></i>
+            <input type="text" id="jobSearchInput" placeholder="Search by title, company, or location..."
+              autocomplete="off">
+          </div>
+          <select id="jobFilterType" class="job-filter-select">
+            <option value="">All Types</option>
+            <option value="Full-time">Full-time</option>
+            <option value="Part-time">Part-time</option>
+            <option value="Internship">Internship</option>
+            <option value="Contract">Contract</option>
+          </select>
+        </div>
+
+        <!-- Jobs List -->
+        <div class="job-cards-list" id="jobCardsList">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="jobsEmptyState" class="job-empty-state" style="display:none;">
+          <i class='bx bx-briefcase-alt-2'></i>
+          <h3>No jobs found</h3>
+          <p>Try adjusting your search or be the first to post a job!</p>
         </div>
       </div>
 
-      <div class="job-list" id="jobs-container">
-        <!-- Populated by JavaScript -->
-      </div>
-
-      <!-- No Results Message -->
-      <div id="no-jobs-results" class="no-results" style="display: none;">
-        <i class='bx bx-search-alt-2'></i>
-        <h3>No jobs found</h3>
-        <p>Try adjusting your search terms</p>
+      <!-- Tab: Post a Job -->
+      <div class="job-tab-content" id="tab-post-job">
+        <div class="job-post-card">
+          <div class="job-post-header">
+            <i class='bx bx-edit'></i>
+            <div>
+              <h3>Share an Opportunity</h3>
+              <p>Help fellow alumni find their next career move.</p>
+            </div>
+          </div>
+          <form id="postJobForm">
+            <div class="job-form-grid">
+              <div class="form-group">
+                <label class="form-label">Job Title *</label>
+                <input type="text" id="jobTitle" class="form-input" placeholder="e.g. Senior Software Engineer"
+                  required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Company *</label>
+                <input type="text" id="jobCompany" class="form-input" placeholder="e.g. Google" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Location *</label>
+                <input type="text" id="jobLocation" class="form-input" placeholder="e.g. Bangalore, India" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Employment Type *</label>
+                <select id="jobType" class="form-input" required>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Contract">Contract</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Salary / Package</label>
+                <input type="text" id="jobSalary" class="form-input" placeholder="e.g. ₹12-18 LPA">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Apply Link</label>
+                <input type="url" id="jobApplyLink" class="form-input" placeholder="https://careers.company.com/apply">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+              <label class="form-label">Job Description *</label>
+              <textarea id="jobDescription" class="form-textarea" rows="5"
+                placeholder="Describe the role, responsibilities, requirements, and perks..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+              <i class='bx bx-send'></i> Post Job
+            </button>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -367,33 +436,284 @@
     <section id="events" class="section">
       <div class="section-header">
         <h2 class="section-title">Events & Reunions</h2>
-        <p class="section-subtitle">Don't miss out on upcoming gatherings.</p>
+        <p class="section-subtitle">Connect, learn, and grow with your alumni community.</p>
       </div>
-      <div class="stats-grid" id="events-grid">
-        <!-- Populated by JS -->
+
+      <!-- Event Portal Tabs -->
+      <div class="job-tabs"> <!-- Reusing job-tabs class for consistency -->
+        <button class="job-tab active" data-event-tab="browse-events"><i class='bx bx-calendar'></i> Upcoming
+          Events</button>
+        <button class="job-tab" data-event-tab="organize-event"><i class='bx bx-plus-circle'></i> Organize
+          Event</button>
+      </div>
+
+      <!-- Tab Content: Browse Events -->
+      <div class="job-tab-content active" id="tab-browse-events">
+        <div class="modern-search-wrapper">
+          <div class="modern-search-bar">
+            <i class='bx bx-search search-main-icon'></i>
+            <input type="text" id="eventSearchInput" class="modern-search-input"
+              placeholder="Search events by title, location, or keyword...">
+            <button class="search-clear-btn" id="eventSearchClear" style="display: none;"><i
+                class='bx bx-x'></i></button>
+            <div class="search-divider"></div>
+            <select id="eventFilterType" class="modern-filter-select">
+              <option value="">All Types</option>
+              <option value="Reunion">Reunion</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Seminar">Seminar</option>
+              <option value="Webinar">Webinar</option>
+              <option value="Networking">Networking</option>
+              <option value="Meetup">Meetup</option>
+            </select>
+            <button class="modern-search-btn">Search</button>
+          </div>
+        </div>
+
+        <div class="events-grid-layout" id="eventsList">
+          <!-- Populated by JS -->
+        </div>
+
+        <div id="eventsEmptyState" class="no-results" style="display: none; padding: 60px 0;">
+          <i class='bx bx-calendar-x' style="font-size: 4rem; opacity: 0.2; margin-bottom: 20px;"></i>
+          <h3>No events found</h3>
+          <p>Be the first to organize a meetup!</p>
+        </div>
+      </div>
+
+      <!-- Tab Content: Organize Event -->
+      <div class="job-tab-content" id="tab-organize-event">
+        <div class="post-job-card">
+          <div class="post-job-header">
+            <h3>Organize an Event</h3>
+            <p>Create a gathering for your fellow alumni.</p>
+          </div>
+          <form id="postEventForm" enctype="multipart/form-data">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="eventTitle">Event Title</label>
+                <input type="text" id="eventTitle" class="form-input" placeholder="e.g. 2018 Batch Reunion" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="eventType">Event Type</label>
+                <select id="eventType" class="form-input" required>
+                  <option value="Networking">Networking</option>
+                  <option value="Reunion">Reunion</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Seminar">Seminar</option>
+                  <option value="Webinar">Webinar</option>
+                  <option value="Meetup">Meetup</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="eventDate">Date</label>
+                <input type="date" id="eventDate" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="eventTime">Time</label>
+                <input type="time" id="eventTime" class="form-input" required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label" for="eventLocation">Location (or Link for Webinar)</label>
+                <input type="text" id="eventLocation" class="form-input" placeholder="e.g. Hotel Taj, Agra or Zoom Link"
+                  required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label" for="eventImage">Event Banner (Optional)</label>
+                <input type="file" id="eventImage" class="form-input" accept="image/*">
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label class="form-label" for="eventDescription">Description</label>
+                <textarea id="eventDescription" class="form-textarea" rows="4"
+                  placeholder="What is this event about? Mention agenda, special guests, etc." required></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+              <i class='bx bx-calendar-plus'></i> Create Event
+            </button>
+          </form>
+        </div>
       </div>
     </section>
 
     <!-- Success Stories Section -->
     <section id="stories" class="section">
-      <div class="section-header">
-        <h2 class="section-title">Success Stories</h2>
-        <p class="section-subtitle">Celebrating the achievements of our alumni.</p>
-      </div>
-      <div class="stats-grid">
-        <div class="card">
-          <img
-            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            alt="Story"
-            style="width: 100%; height: 200px; object-fit: cover; border-radius: 12px; margin-bottom: 16px;">
-          <h3 class="card-title">From HIMCS to Google</h3>
-          <p class="item-subtitle" style="margin-bottom: 12px;">Priya Singh, Class of 2018</p>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">Priya shares her journey
-            of
-            becoming a Senior Software Engineer at Google and how HIMCS helped her...</p>
-          <button class="btn btn-primary" style="width: 100%;">Read More</button>
+
+      <!-- Hero Banner -->
+      <div class="stories-hero">
+        <div class="stories-hero-content">
+          <span class="stories-badge"><i class='bx bxs-trophy'></i> Alumni Spotlight</span>
+          <h1>Success Stories</h1>
+          <p>Celebrating the remarkable journeys and achievements of our HIMCS alumni community.</p>
+        </div>
+        <div class="stories-hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-num">150+</span>
+            <span class="hero-stat-label">Stories Shared</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-num">50+</span>
+            <span class="hero-stat-label">Companies</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-num">20+</span>
+            <span class="hero-stat-label">Countries</span>
+          </div>
         </div>
       </div>
+
+      <!-- Filter Tabs -->
+      <div class="stories-filters">
+        <button class="stories-tab active" data-filter="all">All Stories</button>
+        <button class="stories-tab" data-filter="tech">Technology</button>
+        <button class="stories-tab" data-filter="business">Business</button>
+        <button class="stories-tab" data-filter="research">Research</button>
+        <button class="stories-tab" data-filter="social">Social Impact</button>
+      </div>
+
+      <!-- Featured Story -->
+      <div class="story-featured">
+        <div class="story-featured-img">
+          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Priya Singh">
+          <span class="story-year-badge">Class of 2018</span>
+        </div>
+        <div class="story-featured-content">
+          <span class="story-category tech">Technology</span>
+          <h2>From HIMCS to Google: A Journey of Persistence</h2>
+          <p class="story-excerpt">Priya Singh shares her inspiring journey from being a curious student at HIMCS to becoming a Senior Software Engineer at Google. Her story highlights the importance of never giving up and continuously learning new skills.</p>
+          <div class="story-author">
+            <img src="https://ui-avatars.com/api/?name=Priya+Singh&background=6366f1&color=fff&size=40" alt="Priya Singh">
+            <div class="story-author-info">
+              <strong>Priya Singh</strong>
+              <span>Senior Software Engineer, Google</span>
+            </div>
+          </div>
+          <button class="btn-story-read">Read Full Story <i class='bx bx-right-arrow-alt'></i></button>
+        </div>
+      </div>
+
+      <!-- Stories Grid -->
+      <div class="stories-grid">
+
+        <div class="story-card" data-category="tech">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Rahul Sharma">
+            <span class="story-category tech">Technology</span>
+          </div>
+          <div class="story-card-body">
+            <h3>Building AI Products at Microsoft</h3>
+            <p>Rahul turned his passion for AI into a career at Microsoft, leading product development for Azure AI services.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Rahul+Sharma&background=f59e0b&color=fff&size=32" alt="">
+                <span>Rahul Sharma</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 5 min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card" data-category="business">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ananya Patel">
+            <span class="story-category business">Business</span>
+          </div>
+          <div class="story-card-body">
+            <h3>Founding a FinTech Startup Worth $10M</h3>
+            <p>Ananya's entrepreneurial spirit led her to build PayEase, a fintech startup now serving over 100K users.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Ananya+Patel&background=10b981&color=fff&size=32" alt="">
+                <span>Ananya Patel</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 7 min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card" data-category="research">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Dr. Vikram Mehta">
+            <span class="story-category research">Research</span>
+          </div>
+          <div class="story-card-body">
+            <h3>Publishing Breakthrough Research at MIT</h3>
+            <p>Dr. Vikram's research in quantum computing was published in Nature and has opened new frontiers in the field.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Vikram+Mehta&background=a855f7&color=fff&size=32" alt="">
+                <span>Dr. Vikram Mehta</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 6 min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card" data-category="social">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Meera Joshi">
+            <span class="story-category social">Social Impact</span>
+          </div>
+          <div class="story-card-body">
+            <h3>Educating 10,000 Rural Children</h3>
+            <p>Meera founded 'ShikshaSeva', an NGO that has brought quality education to underserved communities across India.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Meera+Joshi&background=ec4899&color=fff&size=32" alt="">
+                <span>Meera Joshi</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 4 min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card" data-category="tech">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Arjun Reddy">
+            <span class="story-category tech">Technology</span>
+          </div>
+          <div class="story-card-body">
+            <h3>Leading DevOps at Amazon Web Services</h3>
+            <p>Arjun shares how his journey from campus placement to becoming a Principal Engineer at AWS unfolded.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Arjun+Reddy&background=3b82f6&color=fff&size=32" alt="">
+                <span>Arjun Reddy</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 5 min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card" data-category="business">
+          <div class="story-card-img">
+            <img src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Sneha Kapoor">
+            <span class="story-category business">Business</span>
+          </div>
+          <div class="story-card-body">
+            <h3>From MBA to VP at Goldman Sachs</h3>
+            <p>Sneha's strategic thinking and leadership abilities fast-tracked her career in investment banking.</p>
+            <div class="story-card-footer">
+              <div class="story-card-author">
+                <img src="https://ui-avatars.com/api/?name=Sneha+Kapoor&background=f59e0b&color=fff&size=32" alt="">
+                <span>Sneha Kapoor</span>
+              </div>
+              <span class="story-read-time"><i class='bx bx-time-five'></i> 6 min</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Share Your Story CTA -->
+      <div class="stories-cta">
+        <div class="stories-cta-content">
+          <h3>Have a story to share?</h3>
+          <p>Inspire the next generation of HIMCS alumni by sharing your journey.</p>
+        </div>
+        <button class="btn-share-story"><i class='bx bx-edit'></i> Share Your Story</button>
+      </div>
+
     </section>
 
     <!-- Feedback Section -->
@@ -484,62 +804,80 @@
       <div class="profile-card">
         <div class="profile-header">
           <div class="profile-pic-container" style="position: relative;">
-            <img src="https://ui-avatars.com/api/?name=Anshul+Shukla&background=4f46e5&color=fff" alt="Profile"
-              class="profile-pic" id="settingsProfilePreview">
+            <img
+              src="{% if user.profile_pic %}{{ user.profile_pic.url }}{% else %}https://ui-avatars.com/api/?name={{ name|urlencode }}&background=4f46e5&color=fff{% endif %}"
+              alt="Profile" class="profile-pic" id="settingsProfilePreview" style="object-fit: cover;">
             <button class="avatar-edit-btn" onclick="document.getElementById('settingsProfileInput').click()"
               style="width: 30px; height: 30px; right: -5px; bottom: 0;">
               <i class='bx bx-camera' style="font-size: 1.1rem;"></i>
             </button>
-            <input type="file" id="settingsProfileInput" hidden accept="image/*">
+            <input type="file" name="profile_pic" form="profile-form" id="settingsProfileInput" hidden accept="image/*">
           </div>
           <div class="profile-info">
             <h2>{{ name }}</h2>
-            <p>Software Engineer at TechCorp</p>
-            <p>Class of 2022 | Computer Science</p>
-            <p>Location: India</p>
+            <p>{{ user.position|default:'Alumni' }} at {{ user.company|default:'HIMCS' }}</p>
+            <p>Batch of {{ user.Batch }} | {{ user.course }}</p>
+            <p>Location: {{ user.location|default:'Not specified' }}</p>
           </div>
         </div>
 
-        <form id="profile-form">
+        <form id="profile-form" action="{% url 'update_profile' %}" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
           <div class="form-group">
             <label class="form-label">Full Name</label>
-            <input type="text" class="form-input" value="{{ name }}" placeholder="Enter your full name">
+            <input type="text" name="name" class="form-input" value="{{ name }}" placeholder="Enter your full name">
           </div>
 
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input type="email" class="form-input" value="{{ email }}" placeholder="Enter your email">
+            <input type="email" name="email" class="form-input" value="{{ email }}" placeholder="Enter your email">
           </div>
 
           <div class="form-group">
             <label class="form-label">Graduation Year</label>
-            <input type="number" class="form-input" value="2022" placeholder="e.g., 2020">
+            <input type="number" name="batch" class="form-input" value="{{ user.Batch }}" placeholder="e.g., 2020">
           </div>
 
           <div class="form-group">
             <label class="form-label">Department</label>
-            <select class="form-input">
-              <option selected>Computer Science</option>
-              <option>Mechanical Engineering</option>
-              <option>Business Administration</option>
-              <option>Civil Engineering</option>
-              <option>Electronics</option>
+            <select name="course" class="form-input">
+              <option value="BBA" {% if user.course == "BBA" %}selected{% endif %}>BBA</option>
+              <option value="BCA" {% if user.course == "BCA" %}selected{% endif %}>BCA</option>
+              <option value="MCA" {% if user.course == "MCA" %}selected{% endif %}>MCA</option>
+              <option value="MBA" {% if user.course == "MBA" %}selected{% endif %}>MBA</option>
+              <option value="B.TECH" {% if user.course == "B.TECH" %}selected{% endif %}>B.TECH</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Alumni Assistance</label>
+            <select name="alumni_assistance" class="form-input">
+              <option value="Job opportunity" {% if user.alumni_assistance == "Job opportunity" %}selected{% endif %}>Job
+                Opportunity</option>
+              <option value="Guest lecture" {% if user.alumni_assistance == "Guest lecture" %}selected{% endif %}>Guest
+                Lecture</option>
+              <option value="college funding" {% if user.alumni_assistance == "college funding" %}selected{% endif %}>
+                College Funding</option>
+              <option value="none of these" {% if user.alumni_assistance == "none of these" or not user.alumni_assistance %}selected{% endif %}>None of these</option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label">Current Position</label>
-            <input type="text" class="form-input" value="Software Engineer" placeholder="Your current job title">
+            <input type="text" name="position" class="form-input" value="{{ user.position|default:'' }}"
+              placeholder="Your current job title">
           </div>
 
           <div class="form-group">
             <label class="form-label">Company</label>
-            <input type="text" class="form-input" value="TechCorp" placeholder="Your current company">
+            <input type="text" name="company" class="form-input" value="{{ user.company|default:'' }}"
+              placeholder="Your current company">
           </div>
 
           <div class="form-group">
             <label class="form-label">Location</label>
-            <input type="text" class="form-input" value="India" placeholder="City, State/Country">
+            <input type="text" name="location" class="form-input" value="{{ user.location|default:'' }}"
+              placeholder="City, State/Country">
           </div>
 
           <div class="form-group">
@@ -558,8 +896,190 @@
       </div>
     </section>
 
+    <!-- Change Password Section -->
+    <section id="change-password-section" class="section">
+      <div class="section-header">
+        <h2 class="section-title">Change Password</h2>
+        <p class="section-subtitle">Ensure your account is using a long, random password to stay secure.</p>
+      </div>
+
+      <div class="profile-card" style="max-width: 600px; margin: 0 auto;">
+        <form id="change-password-form" action="{% url 'change_password_api' %}" method="POST">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Current Password</label>
+            <input type="password" name="current_password" class="form-input" placeholder="Enter current password"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" name="new_password" class="form-input" placeholder="Enter new password" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" name="confirm_new_password" class="form-input" placeholder="Confirm new password"
+              required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Toast Container for Django Messages -->
+    <div id="toastContainer" class="toast-container">
+      {% if messages %}
+      {% for message in messages %}
+      <div class="toast toast-{% if message.tags == 'error' %}error{% else %}success{% endif %} show">
+        <i class='bx {% if message.tags == ' error' %}bx-error-circle{% else %}bx-check-circle{% endif %}'></i>
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+      <script>
+        setTimeout(() => {
+          document.querySelectorAll('.toast.show').forEach(t => {
+            t.classList.remove('show');
+            setTimeout(() => t.remove(), 300);
+          });
+        }, 4000);
+      </script>
+      {% endif %}
+    </div>
+    <!-- Success Story Modal -->
+    <div class="stories-modal-overlay" id="storyModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+      <div class="stories-modal" style="background: white; width: 90%; max-width: 600px; border-radius: 20px; padding: 32px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <button id="closeStoryModal" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        <h2 id="modalStoryTitle" style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 12px;">Story Title</h2>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+          <img id="modalStoryImg" src="" style="width: 32px; height: 32px; border-radius: 50%;" alt="">
+          <span id="modalStoryAuthor" style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">Author</span>
+        </div>
+        <div id="modalStoryContent" style="color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; max-height: 50vh; overflow-y: auto;">
+          Full story content goes here...
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Story Modal -->
+    <div class="stories-modal-overlay" id="shareStoryModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+      <div class="stories-modal" style="background: white; width: 90%; max-width: 500px; border-radius: 20px; padding: 32px; position: relative; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <button id="closeShareModal" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        <h2 style="font-size: 1.5rem; color: var(--text-main); margin-bottom: 8px;">Share Your Story</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Inspire others by sharing your journey since graduating from HIMCS.</p>
+        <form id="shareStoryForm">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label">Story Title</label>
+            <input type="text" class="form-input" placeholder="e.g. My Journey to Silicon Valley" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label class="form-label">Your Story</label>
+            <textarea class="form-textarea" rows="5" placeholder="Tell us about your challenges and successes..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Story</button>
+        </form>
+      </div>
+    </div>
+
   </main>
-  <script src="{% static 'dashboard.js' %}"></script>
+  <!-- Inject alumni data safely -->
+  {{ alumni_list|json_script:"alumni-data" }}
+  <script>
+    window.djangoAlumniData = JSON.parse(document.getElementById('alumni-data').textContent);
+    window.currentUserId = JSON.parse("{{ user.id|default:'null' }}");
+  </script>
+  <script src="{% static 'dashboard.js' %}?v=13.0"></script>
+  <script src="{% static 'networking.js' %}?v=11.0"></script>
+  <script src="{% static 'job_portal.js' %}?v=11.0"></script>
+  <script src="{% static 'events_portal.js' %}?v=11.0"></script>
+  
+  <script>
+    // Inline Success Stories Script to bypass cache
+    document.addEventListener("DOMContentLoaded", () => {
+        const storyTabs = document.querySelectorAll('.stories-tab');
+        const storyCards = document.querySelectorAll('.story-card');
+        
+        storyTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                storyTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const filterValue = tab.getAttribute('data-filter');
+                storyCards.forEach(card => {
+                    const category = card.getAttribute('data-category');
+                    if (filterValue === 'all' || filterValue === category) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Modals
+        const storyModalOverlay = document.getElementById('storyModalOverlay');
+        const closeStoryModalBtn = document.getElementById('closeStoryModal');
+        const shareStoryModalOverlay = document.getElementById('shareStoryModalOverlay');
+        const closeShareModalBtn = document.getElementById('closeShareModal');
+        const shareStoryForm = document.getElementById('shareStoryForm');
+
+        function openStoryModal(title, author, imgSrc, content) {
+            document.getElementById('modalStoryTitle').textContent = title;
+            document.getElementById('modalStoryAuthor').textContent = author;
+            document.getElementById('modalStoryImg').src = imgSrc;
+            document.getElementById('modalStoryContent').innerHTML = content;
+            storyModalOverlay.style.display = 'flex';
+        }
+
+        storyCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.querySelector('h3').textContent;
+                const author = card.querySelector('.story-card-author span').textContent;
+                const imgSrc = card.querySelector('.story-card-author img').src;
+                const excerpt = card.querySelector('p').textContent;
+                openStoryModal(title, author, imgSrc, `<p>${excerpt}</p><br><p>This is the full story loaded dynamically. They faced many challenges but ultimately succeeded. The journey was long and hard, but the HIMCS community was there to support them.</p>`);
+            });
+        });
+
+        const readFeaturedBtn = document.querySelector('.btn-story-read');
+        if (readFeaturedBtn) {
+            readFeaturedBtn.addEventListener('click', () => {
+                const featuredContainer = document.querySelector('.story-featured');
+                const title = featuredContainer.querySelector('h2').textContent;
+                const author = featuredContainer.querySelector('.story-author-info strong').textContent;
+                const imgSrc = featuredContainer.querySelector('.story-author img').src;
+                const excerpt = featuredContainer.querySelector('.story-excerpt').textContent;
+                openStoryModal(title, author, imgSrc, `<p>${excerpt}</p><br><p>This is the rest of the featured story. They worked hard, learned new things, and never gave up.</p>`);
+            });
+        }
+
+        const shareStoryBtn = document.querySelector('.btn-share-story');
+        if (shareStoryBtn) {
+            shareStoryBtn.addEventListener('click', () => {
+                shareStoryModalOverlay.style.display = 'flex';
+            });
+        }
+
+        if (closeStoryModalBtn) closeStoryModalBtn.addEventListener('click', () => storyModalOverlay.style.display = 'none');
+        if (closeShareModalBtn) closeShareModalBtn.addEventListener('click', () => shareStoryModalOverlay.style.display = 'none');
+        
+        if (storyModalOverlay) storyModalOverlay.addEventListener('click', (e) => {
+            if (e.target === storyModalOverlay) storyModalOverlay.style.display = 'none';
+        });
+        if (shareStoryModalOverlay) shareStoryModalOverlay.addEventListener('click', (e) => {
+            if (e.target === shareStoryModalOverlay) shareStoryModalOverlay.style.display = 'none';
+        });
+
+        if (shareStoryForm) shareStoryForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Thank you for sharing your story! It has been submitted for review.');
+            shareStoryForm.reset();
+            shareStoryModalOverlay.style.display = 'none';
+        });
+    });
+  </script>
 </body>
 
 </html>

@@ -125,3 +125,18 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Settings for Password Reset (Gmail SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# IMPORTANT: Replace these with your actual Gmail credentials
+EMAIL_HOST_USER = 'kartiksingh54331@gmail.com' 
+EMAIL_HOST_PASSWORD = 'djdc hpbn cxrm nbkq' 
+
+# Media files (User uploaded images)
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

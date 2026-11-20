@@ -5,12 +5,71 @@ document.addEventListener("DOMContentLoaded", () => {
         return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=fff`;
     };
 
-    // Initialize Avatar if it's a placeholder
-    const bannerAvatarImg = document.querySelector('.banner-avatar img');
-    const bannerNameEl = document.querySelector('.banner-info h2');
+    /* ================= Profile Dropdown Toggle ================= */
+    const profilePicBtn = document.getElementById('profilePicBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+
+    if (profilePicBtn && profileDropdown) {
+        profilePicBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('show');
+            // Also close notif dropdown when profile opens
+            const notifDropdown = document.getElementById('notifDropdown');
+            if (notifDropdown) notifDropdown.classList.remove('show');
+        });
+
+        // Close profile dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profilePicBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+            }
+        });
+    }
+
+    // Profile menu: Edit Profile navigates to profile settings section
+    const menuEditProfile = document.getElementById('menu-edit-profile');
+    if (menuEditProfile) {
+        menuEditProfile.addEventListener('click', (e) => {
+            e.preventDefault();
+            profileDropdown.classList.remove('show');
+            // Switch to profile settings section
+            const profileNav = document.querySelector('[data-section="profile-settings"]');
+            if (profileNav) profileNav.click();
+        });
+    }
+
+    // Profile menu: Change Password
+    const menuChangePassword = document.getElementById('menu-change-password');
+    if (menuChangePassword) {
+        menuChangePassword.addEventListener('click', (e) => {
+            e.preventDefault();
+            profileDropdown.classList.remove('show');
+            
+            // Remove active from nav items
+            const navItems = document.querySelectorAll(".nav-item");
+            navItems.forEach(nav => nav.classList.remove("active"));
+            
+            // Hide all sections
+            const sections = document.querySelectorAll(".section");
+            sections.forEach(section => {
+                section.classList.remove("active");
+                section.style.display = "none";
+            });
+            
+            // Show change password section
+            const targetSection = document.getElementById('change-password-section');
+            if (targetSection) {
+                targetSection.style.display = "block";
+                setTimeout(() => targetSection.classList.add("active"), 10);
+            }
+        });
+    }
+
+    // Initialize avatar fallback
+    const bannerAvatarImg = document.querySelector('.topbar-profile-btn img');
+    const bannerNameEl = document.querySelector('.pd-info h4');
     if (bannerAvatarImg && bannerNameEl) {
         const currentSrc = bannerAvatarImg.src;
-        // If it's empty or the default placeholder with empty name
         if (currentSrc.includes('name=&') || currentSrc.includes('name=')) {
             bannerAvatarImg.src = getAvatarUrl(bannerNameEl.textContent.trim());
         }
@@ -48,6 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, 10);
             }
 
+            // Auto-load jobs when navigating to Job Portal
+            if (sectionId === 'jobs' && typeof loadJobs === 'function') {
+                loadJobs();
+            }
+
+            // Auto-load events when navigating to Events
+            if (sectionId === 'events' && typeof loadEvents === 'function') {
+                loadEvents();
+            }
+
             // Close sidebar on mobile after selection
             if (window.innerWidth <= 768) {
                 sidebar.classList.remove("open");
@@ -75,12 +144,28 @@ document.addEventListener("DOMContentLoaded", () => {
     /* ================= Mock Data Population ================= */
 
     // Networking Data
-    const networkingData = [
-        { name: "Kartik", role: "Product Manager", company: "Microsoft", batch: "2024", location: "Banglore, India", img: "https://ui-avatars.com/api/?name=Kartik&background=0D8ABC&color=fff" },
-        { name: "Gaurav Yadav", role: "Senior Developer", company: "Amazon", batch: "2022", location: "Noida, India", img: "https://ui-avatars.com/api/?name=Gaurav+Yadav&background=random&color=fff" },
-        { name: "Chandraveer Baghel", role: "UX Designer", company: "Adobe", batch: "2023", location: "Noida, India", img: "https://ui-avatars.com/api/?name=Chandraveer+Baghel&background=random&color=fff" },
-        { name: "Charitra Jain", role: "Data Scientist", company: "Netflix", batch: "2022", location: "Delhi, India", img: "https://ui-avatars.com/api/?name=Charitra+Jain&background=random&color=fff" }
-    ];
+    let networkingData = [];
+    if (window.djangoAlumniData && window.djangoAlumniData.length > 0) {
+        networkingData = window.djangoAlumniData.map(person => {
+            // Check if person is current user (could skip this if we want to show current user too)
+            return {
+                name: person.name,
+                role: person.position || "Alumni",
+                company: person.company || "HIMCS",
+                batch: person.Batch ? person.Batch.toString() : "N/A",
+                location: person.location || "Not specified",
+                alumni_assistance: person.alumni_assistance || "none of these",
+                img: person.profile_pic_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(person.name || "A")}&background=random&color=fff`
+            };
+        });
+    } else {
+        networkingData = [
+            { name: "Kartik", role: "Product Manager", company: "Microsoft", batch: "2024", location: "Banglore, India", alumni_assistance: "Job opportunity", img: "https://ui-avatars.com/api/?name=Kartik&background=0D8ABC&color=fff" },
+            { name: "Gaurav Yadav", role: "Senior Developer", company: "Amazon", batch: "2022", location: "Noida, India", alumni_assistance: "Guest lecture", img: "https://ui-avatars.com/api/?name=Gaurav+Yadav&background=random&color=fff" },
+            { name: "Chandraveer Baghel", role: "UX Designer", company: "Adobe", batch: "2023", location: "Noida, India", alumni_assistance: "none of these", img: "https://ui-avatars.com/api/?name=Chandraveer+Baghel&background=random&color=fff" },
+            { name: "Charitra Jain", role: "Data Scientist", company: "Netflix", batch: "2022", location: "Delhi, India", alumni_assistance: "college funding", img: "https://ui-avatars.com/api/?name=Charitra+Jain&background=random&color=fff" }
+        ];
+    }
 
     const networkingGrid = document.getElementById("networking-grid");
     const alumniSearch = document.getElementById("alumni-search");
@@ -104,14 +189,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const card = document.createElement("div");
             card.className = "card";
             card.style.textAlign = "center";
+
+            let assistanceBadge = "";
+            if (person.alumni_assistance && person.alumni_assistance !== "none of these" && person.alumni_assistance !== "") {
+                assistanceBadge = `<span class="badge" style="background-color: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; display: inline-block; margin-bottom: 8px;">Assist through: ${person.alumni_assistance}</span>`;
+            }
+
             card.innerHTML = `
-                <img src="${person.img}" alt="${person.name}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 16px; object-fit: cover;">
+                <img src="${person.img}" alt="${person.name}" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 16px; object-fit: cover; align-self: center;">
                 <h3 style="font-size: 1.1rem; margin-bottom: 4px;">${person.name}</h3>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px;">${person.role} at ${person.company}</p>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px;"><i class='bx bx-map'></i> ${person.location}</p>
-                <p style="font-size: 0.85rem; color: var(--primary); font-weight: 500; margin-bottom: 16px;">Class of ${person.batch}</p>
-                <button class="btn btn-primary" style="width: 100%; padding: 8px;">Connect</button>
+                <p style="font-size: 0.85rem; color: var(--primary); font-weight: 500; margin-bottom: 8px;">Class of ${person.batch}</p>
+                ${assistanceBadge}
+                <button class="btn btn-primary" style="width: 100%; padding: 8px; margin-top: auto;">Connect</button>
             `;
+            card.style.display = "flex";
+            card.style.flexDirection = "column";
             networkingGrid.appendChild(card);
         });
     }
@@ -121,29 +215,43 @@ document.addEventListener("DOMContentLoaded", () => {
         renderAlumni(networkingData);
     }
 
+    const alumniAssistanceFilter = document.getElementById("alumni-assistance-filter");
+
+    function filterAlumni() {
+        const searchTerm = (alumniSearch ? alumniSearch.value : "").toLowerCase().trim();
+        const assistanceTerm = (alumniAssistanceFilter ? alumniAssistanceFilter.value : "");
+
+        // Show/hide clear button
+        if (searchTerm && searchClear) {
+            searchClear.style.display = "flex";
+        } else if (searchClear) {
+            searchClear.style.display = "none";
+        }
+
+        // Filter alumni
+        const filteredData = networkingData.filter(person => {
+            const matchesSearch = (person.name || "").toLowerCase().includes(searchTerm) ||
+                (person.role || "").toLowerCase().includes(searchTerm) ||
+                (person.company || "").toLowerCase().includes(searchTerm) ||
+                (person.location || "").toLowerCase().includes(searchTerm) ||
+                (person.batch || "").toString().toLowerCase().includes(searchTerm);
+
+            const personAssistance = (person.alumni_assistance || "none of these").toLowerCase();
+            const matchesAssistance = assistanceTerm === "" || personAssistance === assistanceTerm.toLowerCase();
+
+            return matchesSearch && matchesAssistance;
+        });
+
+        renderAlumni(filteredData);
+    }
+
     // Search functionality with location filtering
     if (alumniSearch) {
-        alumniSearch.addEventListener("input", (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
+        alumniSearch.addEventListener("input", filterAlumni);
+    }
 
-            // Show/hide clear button
-            if (searchTerm) {
-                searchClear.style.display = "flex";
-            } else {
-                searchClear.style.display = "none";
-            }
-
-            // Filter alumni (including location)
-            const filteredData = networkingData.filter(person => {
-                return person.name.toLowerCase().includes(searchTerm) ||
-                    person.role.toLowerCase().includes(searchTerm) ||
-                    person.company.toLowerCase().includes(searchTerm) ||
-                    person.location.toLowerCase().includes(searchTerm) ||
-                    person.batch.includes(searchTerm);
-            });
-
-            renderAlumni(filteredData);
-        });
+    if (alumniAssistanceFilter) {
+        alumniAssistanceFilter.addEventListener("change", filterAlumni);
     }
 
     // Clear button functionality
@@ -151,100 +259,8 @@ document.addEventListener("DOMContentLoaded", () => {
         searchClear.addEventListener("click", () => {
             alumniSearch.value = "";
             searchClear.style.display = "none";
-            renderAlumni(networkingData);
+            filterAlumni();
             alumniSearch.focus();
-        });
-    }
-
-    // Job Data
-    const jobData = [
-        { title: "Frontend Engineer", company: "Spotify", location: "Remote", type: "Full-time", posted: "2 days ago" },
-        { title: "Marketing Lead", company: "Airbnb", location: "San Francisco, CA", type: "Full-time", posted: "5 days ago" },
-        { title: "Data Analyst Intern", company: "Tesla", location: "Austin, TX", type: "Internship", posted: "1 week ago" },
-        { title: "Backend Developer", company: "Netflix", location: "Los Gatos, CA", type: "Full-time", posted: "3 days ago" },
-        { title: "UX Designer", company: "Adobe", location: "Remote", type: "Full-time", posted: "1 week ago" },
-        { title: "Product Manager", company: "Microsoft", location: "Seattle, WA", type: "Full-time", posted: "4 days ago" }
-    ];
-
-    const jobsContainer = document.getElementById("jobs-container");
-    const jobSearch = document.getElementById("job-search");
-    const jobSearchClear = document.getElementById("job-search-clear");
-    const noJobsResults = document.getElementById("no-jobs-results");
-
-    // Function to render job cards
-    function renderJobs(data) {
-        if (!jobsContainer) return;
-
-        jobsContainer.innerHTML = ""; // Clear existing cards
-
-        if (data.length === 0) {
-            jobsContainer.style.display = "none";
-            if (noJobsResults) noJobsResults.style.display = "block";
-            return;
-        }
-
-        jobsContainer.style.display = "flex";
-        jobsContainer.style.flexDirection = "column";
-        jobsContainer.style.gap = "20px";
-        if (noJobsResults) noJobsResults.style.display = "none";
-
-        data.forEach(job => {
-            const card = document.createElement("div");
-            card.className = "job-card";
-            card.innerHTML = `
-                <div class="job-icon">💼</div>
-                <div class="job-details">
-                    <h3>${job.title}</h3>
-                    <div class="job-meta">
-                        <span>${job.company}</span>
-                        <span>•</span>
-                        <span>${job.location}</span>
-                        <span>•</span>
-                        <span>${job.type}</span>
-                    </div>
-                </div>
-                <button class="apply-btn">Apply Now</button>
-            `;
-            jobsContainer.appendChild(card);
-        });
-    }
-
-    // Initial render
-    if (jobsContainer) {
-        renderJobs(jobData);
-    }
-
-    // Search functionality for jobs
-    if (jobSearch) {
-        jobSearch.addEventListener("input", (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-
-            // Show/hide clear button
-            if (searchTerm) {
-                if (jobSearchClear) jobSearchClear.style.display = "flex";
-            } else {
-                if (jobSearchClear) jobSearchClear.style.display = "none";
-            }
-
-            // Filter jobs
-            const filteredData = jobData.filter(job => {
-                return job.title.toLowerCase().includes(searchTerm) ||
-                    job.company.toLowerCase().includes(searchTerm) ||
-                    job.location.toLowerCase().includes(searchTerm) ||
-                    job.type.toLowerCase().includes(searchTerm);
-            });
-
-            renderJobs(filteredData);
-        });
-    }
-
-    // Clear button functionality for jobs
-    if (jobSearchClear) {
-        jobSearchClear.addEventListener("click", () => {
-            jobSearch.value = "";
-            jobSearchClear.style.display = "none";
-            renderJobs(jobData);
-            jobSearch.focus();
         });
     }
 
@@ -361,90 +377,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (profileForm) {
         profileForm.addEventListener("submit", (e) => {
-            e.preventDefault();
-
-            // Get the updated values from the form
-            const inputs = profileForm.querySelectorAll('input, select');
-            const updatedName = inputs[0].value.trim();
-            const updatedEmail = inputs[1].value.trim();
-            // inputs[2] is Year, inputs[3] is Dept
-            const updatedRole = inputs[4].value.trim();
-            const updatedCompany = inputs[5].value.trim();
-
-            // Simulate API call
+            // Native form submission will happen
+            // Removed e.preventDefault() to allow backend update
             const btn = profileForm.querySelector("button[type='submit']");
-            const originalText = btn.textContent;
-            btn.textContent = "Saving...";
-            btn.disabled = true;
-
-            // Helper to generate avatar URL
-            const getAvatarUrl = (name) => {
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=fff`;
-            };
-
-            setTimeout(() => {
-                // Update the name in the dashboard profile card (Sidebar)
-                const profileCardTitle = document.querySelector('.profile-card .card-title');
-                if (profileCardTitle && updatedName) {
-                    profileCardTitle.textContent = updatedName;
-                }
-
-                // Update Welcome Banner Info
-                const bannerName = document.querySelector('.banner-info h2');
-                const bannerRole = document.querySelector('.banner-info p');
-                const bannerEmail = document.querySelector('.banner-email');
-                const welcomeNameSpan = document.querySelector('.banner-center h1 span');
-                const bannerAvatar = document.querySelector('.banner-avatar img');
-
-                if (bannerName) bannerName.textContent = updatedName;
-                if (bannerRole) bannerRole.textContent = `${updatedRole} at ${updatedCompany}`;
-
-                if (bannerEmail) {
-                    bannerEmail.innerHTML = `<i class='bx bx-envelope'></i> ${updatedEmail}`;
-                }
-
-                if (welcomeNameSpan) {
-                    const firstName = updatedName.split(' ')[0];
-                    welcomeNameSpan.textContent = `${firstName}!`;
-                }
-
-                // Update dashboard profile picture if changed
-                // Logic: If user uploaded a file, use it.
-                // If NOT, and the current image is a generated one (or we want to force update), generate new one.
-                // For simplicity: If settingsProfilePreview has a data-url (uploaded), use it.
-                // If it's a URL (http...), check if it's ui-avatars. If so, regenerate.
-
-                let newAvatarSrc = settingsProfilePreview.src;
-                const isUploaded = newAvatarSrc.startsWith('data:');
-                const isGenerated = newAvatarSrc.includes('ui-avatars.com');
-
-                if (!isUploaded && isGenerated) {
-                    newAvatarSrc = getAvatarUrl(updatedName);
-                }
-
-                if (dashboardProfilePreview) {
-                    dashboardProfilePreview.src = newAvatarSrc;
-                }
-                if (bannerAvatar) {
-                    bannerAvatar.src = newAvatarSrc;
-                }
-                // Also update the settings preview to match
-                if (settingsProfilePreview) {
-                    settingsProfilePreview.src = newAvatarSrc;
-                }
-
-                btn.textContent = originalText;
-                btn.disabled = false;
-                alert("Profile updated successfully!");
-
-                // Navigate back to dashboard
-                const dashboardNavItem = Array.from(navItems).find(item => item.dataset.section === "dashboard");
-                if (dashboardNavItem) {
-                    dashboardNavItem.click();
-                }
-            }, 1000);
+            if (btn) {
+                btn.textContent = "Saving...";
+                btn.disabled = true;
+            }
         });
     }
+    // Profile form submission is now handled by Django (native POST request)
 
     if (cancelProfileBtn) {
         cancelProfileBtn.addEventListener("click", () => {
@@ -760,12 +702,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Show Success
             alert("Thank you for your feedback! We've received it.");
-
-            renderFeedbackHistory();
         });
     }
 
-    // Initial Render
-    renderFeedbackHistory();
+    // Initial load for jobs and events to update dashboard counts
+    if (window.loadJobs) window.loadJobs();
+    if (window.loadEvents) window.loadEvents();
 
 });

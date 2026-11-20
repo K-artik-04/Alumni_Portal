@@ -5,7 +5,7 @@
     {% load static %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - HIMCS Alumni Portal</title>
+    <title>Login - Alumni Portal</title>
     <link rel="stylesheet" href="{% static 'style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -34,7 +34,7 @@
         <div class="container">
             <a href="{% url 'index' %}" class="logo">
                 <img src="{% static 'logo.png' %}" alt="">
-                HIMCS Alumni
+                Alumni Portal
             </a>
             <div class="hamburger">
                 <i class="fas fa-bars"></i>
@@ -107,7 +107,8 @@
                         <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                             <input type="checkbox"> Remember me
                         </label>
-                        <a href="#" style="color: var(--secondary-color);">Forgot Password?</a>
+                        <a href="{% url 'forgot_password' %}" style="color: var(--secondary-color);">Forgot
+                            Password?</a>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
@@ -127,7 +128,7 @@
             <div class="footer-content">
                 <!-- HIMCS Alumni Section -->
                 <div class="footer-logo">
-                    <h3>HIMCS Alumni</h3>
+                    <h3>Alumni Portal</h3>
                     <p style="opacity: 0.8; font-size: 0.9rem; margin-bottom: 1.5rem;">
                         Connecting generations of excellence.
                     </p>
