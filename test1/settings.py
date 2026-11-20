@@ -70,14 +70,18 @@ WSGI_APPLICATION = 'test1.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+DATABASE_PATH = os.environ.get(
+    "DATABASE_PATH",
+    str(BASE_DIR / "db.sqlite3")
+)
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'himcs_alumni',  # Replace with your MySQL database name
-        'USER': 'root',      # Replace with your MySQL username
-        'PASSWORD': '12345678@Ks', # Replace with your MySQL password
-        'HOST': 'localhost',            # Or the IP address/hostname of your MySQL server
-        'PORT': '3306',                 # Or the port your MySQL server is listening on
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": DATABASE_PATH,
+        "OPTIONS": {
+            "timeout": 20,
+        },
     }
 }
 
